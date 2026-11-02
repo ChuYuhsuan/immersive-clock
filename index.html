@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="北京时间">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="format-detection" content="telephone=no">
+<meta name="description" content="诗钟 —— 一座会念诗的钟。零依赖的单文件全屏时钟：大字北京时间、自动轮播的古诗文、5 套深色皮肤与粒子特效。">
+<title>诗钟 · Shizhong</title>
+<!-- iPad Safari 专用：iOS 不支持元素级全屏 API，改用「添加到主屏幕」得到独立窗口；轻点换句、左右滑动换皮肤、双击隐藏界面 -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* ==================== 皮肤变量 ==================== */
+  :root {
+    --bg: #0a0a0f;
+    --bg-glow: rgba(0,200,255,0.05);
+    --text: #e8f0ff;
+    --text-glow1: rgba(0,180,255,0.18);
+    --text-glow2: rgba(0,180,255,0.08);
+    --sec-color: rgba(232,240,255,0.38);
+    --date-color: rgba(200,220,255,0.32);
+    --slogan-color: rgba(140,200,255,0.55);
+    --sep-color: rgba(0,180,255,0.28);
+    --hint-color: rgba(200,220,255,0.13);
+    --cursor-glow: rgba(0,200,255,0.07);
+  }
+
+  [data-theme="navy-star"] {
+    --bg: #0a1628;
+    --bg-glow: rgba(100,160,255,0.07);
+    --text: #cfe0ff;
+    --text-glow1: rgba(100,160,255,0.22);
+    --text-glow2: rgba(100,160,255,0.10);
+    --sec-color: rgba(200,220,255,0.40);
+    --date-color: rgba(160,190,240,0.38);
+    --slogan-color: rgba(210,180,110,0.62);
+    --sep-color: rgba(210,180,110,0.32);
+    --hint-color: rgba(160,190,240,0.14);
+    --cursor-glow: rgba(100,160,255,0.08);
+  }
+
+  [data-theme="navy-aurora"] {
+    --bg: #061220;
+    --bg-glow: rgba(0,220,200,0.06);
+    --text: #a8f2e8;
+    --text-glow1: rgba(0,220,200,0.20);
+    --text-glow2: rgba(0,220,200,0.09);
+    --sec-color: rgba(160,240,232,0.38);
+    --date-color: rgba(100,210,195,0.35);
+    --slogan-color: rgba(90,220,190,0.58);
+    --sep-color: rgba(0,200,180,0.28);
+    --hint-color: rgba(100,210,195,0.13);
+    --cursor-glow: rgba(0,220,200,0.07);
+  }
+
+  [data-theme="forest"] {
+    --bg: #0a1a12;
+    --bg-glow: rgba(80,200,120,0.06);
+    --text: #baf0d2;
+    --text-glow1: rgba(80,200,120,0.18);
+    --text-glow2: rgba(80,200,120,0.08);
+    --sec-color: rgba(186,240,210,0.38);
+    --date-color: rgba(150,215,175,0.34);
+    --slogan-color: rgba(215,195,115,0.60);
+    --sep-color: rgba(215,195,115,0.28);
+    --hint-color: rgba(150,215,175,0.13);
+    --cursor-glow: rgba(80,200,120,0.07);
+  }
+
+  [data-theme="forest-night"] {
+    --bg: #061510;
+    --bg-glow: rgba(212,164,76,0.055);
+    --text: #dccb9e;
+    --text-glow1: rgba(212,164,76,0.18);
+    --text-glow2: rgba(212,164,76,0.08);
+    --sec-color: rgba(220,203,158,0.38);
+    --date-color: rgba(190,170,110,0.34);
+    --slogan-color: rgba(170,210,150,0.58);
+    --sep-color: rgba(170,210,150,0.28);
+    --hint-color: rgba(190,170,110,0.13);
+    --cursor-glow: rgba(212,164,76,0.07);
+  }
+
+  /* ==================== 基础 ==================== */
+  /* iOS Safari 的地址栏会让 100vh 溢出，用 100dvh 动态视口 + -webkit-fill-available 兜底 */
+  html {
+    width: 100%; height: 100%;
+    height: -webkit-fill-available;
+    height: 100dvh;
+    overflow: hidden;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  body {
+    width: 100%; height: 100%;
+    height: -webkit-fill-available;
+    height: 100dvh;
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    /* iPadOS 无 Bahnschrift/Consolas，改用系统等宽字体 SF Mono / Menlo，等宽对齐且带科技感 */
+    font-family: ui-monospace, 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: default;
+    transition: background 0.8s ease;
+  }
+
+  body.hide-cursor { cursor: none; }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(ellipse at 50% 40%, var(--bg-glow) 0%, transparent 62%);
+    pointer-events: none;
+    z-index: 0;
+    animation: breathe 8s ease-in-out infinite alternate;
+  }
+  @keyframes breathe {
+    0%   { opacity: 0.45; transform: scale(1); }
+    100% { opacity: 1;    transform: scale(1.06); }
+  }
+
+  #particleCanvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #cursorGlow {
+    position: fixed;
+    width: 380px; height: 380px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--cursor-glow) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+    transform: translate(-50%, -50%);
+    left: -999px; top: -999px;
+    transition: background 0.8s;
+  }
+
+  /* ==================== 主内容 ==================== */
+  .container {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    padding: 0 3vw;
+  }
+
+  .time {
+    /* 竖屏按宽度、横屏按视高取小值，两种方向都不出屏 */
+    font-size: min(19vw, 27vh);
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 30px var(--text-glow1), 0 0 70px var(--text-glow2);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    transition: color 0.8s, text-shadow 0.8s;
+    white-space: nowrap;
+  }
+
+  /* 时:分 变化 —— 极轻微的呼吸，几乎无感 */
+  .time.tick { animation: timeSoft 0.7s cubic-bezier(0.22, 1, 0.36, 1); }
+  @keyframes timeSoft {
+    0%   { filter: brightness(1.16); }
+    100% { filter: brightness(1); }
+  }
+
+  .seconds {
+    font-size: 0.34em;
+    font-weight: 400;
+    color: var(--sec-color);
+    margin-left: 0.12em;
+    vertical-align: baseline;
+    transition: color 0.8s;
+    display: inline-block;
+    will-change: transform, opacity, filter;
+  }
+
+  /* 秒数变化 —— 柔和上浮 + 去模糊，不再闪动 */
+  .seconds.tick { animation: secSoft 0.66s cubic-bezier(0.22, 1, 0.36, 1); }
+  @keyframes secSoft {
+    0% {
+      transform: translateY(0.14em) scale(0.92);
+      opacity: 0.42;
+      filter: blur(2.4px);
+    }
+    55% {
+      opacity: 0.92;
+      filter: blur(0.5px);
+    }
+    100% {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+      filter: blur(0);
+    }
+  }
+
+  .date {
+    font-size: clamp(15px, 1.7vw, 34px);
+    color: var(--date-color);
+    letter-spacing: 0.3em;
+    margin-top: 1.6em;
+    font-weight: 400;
+    transition: color 0.8s;
+  }
+
+  .separator {
+    width: 80px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--sep-color), transparent);
+    margin: 1.8em auto;
+    transition: background 0.8s;
+    animation: sepPulse 4.5s ease-in-out infinite alternate;
+  }
+  @keyframes sepPulse {
+    0%   { width: 62px; opacity: 0.55; }
+    100% { width: 105px; opacity: 1; }
+  }
+
+  /* 标语容器 —— 用于光带扫过的定位 */
+  .sloganWrap {
+    position: relative;
+    display: inline-block;
+    max-width: 88vw;
+  }
+
+  .slogan {
+    /* iOS 自带宋体-简，衬线质感与 Windows 端一致 */
+    font-family: 'Songti SC', 'STSongti-SC-Regular', 'STSong', 'Hiragino Mincho ProN', serif;
+    font-size: clamp(15px, 1.75vw, 33px);
+    color: var(--slogan-color);
+    letter-spacing: 0.18em;
+    font-weight: 400;
+    line-height: 1.65;
+    margin: 0 auto;
+    will-change: transform, opacity, filter;
+    /* 四重过渡：透明度、位移、模糊、字距 —— 让切换有"呼吸"感 */
+    transition:
+      opacity   0.62s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.62s cubic-bezier(0.16, 1, 0.3, 1),
+      filter    0.62s cubic-bezier(0.16, 1, 0.3, 1),
+      letter-spacing 0.62s cubic-bezier(0.16, 1, 0.3, 1),
+      color     0.8s;
+  }
+
+  /* 淡出：上飘 + 虚化 + 字距拉开 */
+  .slogan.out {
+    opacity: 0;
+    transform: translateY(-18px);
+    filter: blur(6px);
+    letter-spacing: 0.34em;
+  }
+
+  /* 淡入起点：下方 + 虚化 + 字距收紧（用 .in-prep 瞬间定位，再移除触发过渡） */
+  .slogan.in-prep {
+    opacity: 0;
+    transform: translateY(18px);
+    filter: blur(6px);
+    letter-spacing: 0.06em;
+    transition: none;
+  }
+
+  /* 切换时光带横扫 */
+  .sweep {
+    position: absolute;
+    left: 0; top: 50%;
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      var(--slogan-color) 45%,
+      var(--slogan-color) 55%,
+      transparent 100%);
+    opacity: 0;
+    pointer-events: none;
+    transform: scaleX(0.2);
+    filter: blur(0.5px);
+  }
+  .sweep.run { animation: sweepGo 1.05s cubic-bezier(0.16, 1, 0.3, 1); }
+  @keyframes sweepGo {
+    0%   { opacity: 0;    transform: translateY(0) scaleX(0.15); }
+    25%  { opacity: 0.55; }
+    60%  { opacity: 0.35; }
+    100% { opacity: 0;    transform: translateY(0) scaleX(1.05); }
+  }
+
+  /* ==================== 皮肤选择器 ==================== */
+  .theme-dots {
+    position: fixed;
+    bottom: calc(68px + env(safe-area-inset-bottom, 0px)); left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 14px;
+    z-index: 3;
+    opacity: 0.18;
+    transition: opacity 0.4s;
+  }
+  .theme-dots:hover { opacity: 1; }
+
+  .theme-dot {
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.25);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.25s ease;
+  }
+  .theme-dot:hover { transform: scale(1.45); }
+  .theme-dot.active {
+    border-color: var(--text);
+    transform: scale(1.28);
+    box-shadow: 0 0 12px var(--text-glow1);
+  }
+  .theme-dot::after {
+    content: attr(data-label);
+    position: absolute;
+    bottom: 24px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    white-space: nowrap;
+    color: var(--date-color);
+    opacity: 0;
+    transition: opacity 0.25s;
+    pointer-events: none;
+    font-family: -apple-system, 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+    letter-spacing: 0.08em;
+  }
+  .theme-dot:hover::after { opacity: 1; }
+
+  /* ==================== 触屏适配 ==================== */
+  /* 无鼠标悬停，圆点常显 0.55；点按热区扩到约 41px，避免 13px 小圆点点不中 */
+  @media (pointer: coarse) {
+    .theme-dots { opacity: 0.55; gap: 20px; }
+    .theme-dots:hover { opacity: 0.55; }
+    .theme-dot { width: 15px; height: 15px; }
+    .theme-dot::before {
+      content: '';
+      position: absolute;
+      inset: -13px;
+      border-radius: 50%;
+    }
+    .theme-dot:hover { transform: none; }
+    .theme-dot.active { transform: scale(1.2); }
+    .theme-dot::after { bottom: 26px; }
+  }
+
+  /* 双击进入「净屏」：只剩时间与句子 */
+  body.bare .theme-dots,
+  body.bare .hint { opacity: 0; pointer-events: none; }
+
+  /* ==================== 底部提示 ==================== */
+  .hint {
+    position: fixed;
+    bottom: calc(26px + env(safe-area-inset-bottom, 0px)); left: 50%;
+    transform: translateX(-50%);
+    font-size: clamp(11px, 0.78vw, 15px);
+    color: var(--hint-color);
+    letter-spacing: 0.13em;
+    font-weight: 400;
+    transition: color 0.8s, opacity 0.5s ease;
+    z-index: 3;
+    text-align: center;
+    white-space: nowrap;
+    font-family: -apple-system, 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+  }
+
+  /* ==================== 异常自检提示（正常时不显示） ==================== */
+  #diag {
+    position: fixed;
+    top: 16px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(180, 40, 40, 0.92);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: -apple-system, 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+    z-index: 999;
+    display: none;
+    max-width: 90vw;
+    line-height: 1.5;
+  }
+
+  /* 入场动画：只做位移，不用 opacity:0 起始，避免动画不执行时内容不可见 */
+  @keyframes slideUp {
+    0%   { transform: translateY(26px); }
+    100% { transform: translateY(0); }
+  }
+  .time        { animation: slideUp 0.9s cubic-bezier(.2,.8,.3,1); }
+  .date        { animation: slideUp 0.9s 0.15s cubic-bezier(.2,.8,.3,1); }
+  .sloganWrap  { animation: slideUp 0.9s 0.3s cubic-bezier(.2,.8,.3,1); }
+</style>
+</head>
+<body data-theme="default">
+
+<canvas id="particleCanvas"></canvas>
+<div id="cursorGlow"></div>
+<div id="diag"></div>
+
+<div class="container">
+  <div class="time" id="timeDisplay"><span id="hourMin">--:--</span><span class="seconds" id="secDisplay">--</span></div>
+  <div class="date" id="dateDisplay">正在加载…</div>
+  <div class="separator"></div>
+  <div class="sloganWrap">
+    <div class="slogan" id="sloganDisplay">长风破浪会有时，直挂云帆济沧海</div>
+    <div class="sweep" id="sweepLine"></div>
+  </div>
+</div>
+
+<div class="theme-dots" id="themeDots"></div>
+<div class="hint" id="hintBar">空格换句 · S 换皮肤 · 双击全屏</div>
+
+<!-- ============================================================
+     第一段：核心时间功能（独立运行，绝不依赖特效）
+     ============================================================ -->
+<script>
+(function () {
+  'use strict';
+
+  var WEEK_NAMES = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+  var hourMinEl = document.getElementById('hourMin');
+  var secEl     = document.getElementById('secDisplay');
+  var dateEl    = document.getElementById('dateDisplay');
+  var timeWrap  = document.getElementById('timeDisplay');
+  var diagEl    = document.getElementById('diag');
+
+  var lastTimeStr = '';
+  var lastSecStr  = '';
+  var lastDateStr = '';
+  var lastMinute  = -1;
+
+  function updateTime() {
+    try {
+      var now = new Date();
+      // 北京时间 = UTC+8，与系统时区设置解耦
+      var bj = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (8 * 3600000));
+
+      var h   = String(bj.getHours()).padStart(2, '0');
+      var min = String(bj.getMinutes()).padStart(2, '0');
+      var sec = String(bj.getSeconds()).padStart(2, '0');
+
+      var timeStr = h + ':' + min;
+      if (timeStr !== lastTimeStr) {
+        hourMinEl.textContent = timeStr;
+        lastTimeStr = timeStr;
+        if (timeWrap) {
+          timeWrap.classList.remove('tick');
+          void timeWrap.offsetWidth;
+          timeWrap.classList.add('tick');
+        }
+      }
+
+      if (sec !== lastSecStr) {
+        secEl.textContent = sec;
+        lastSecStr = sec;
+        secEl.classList.remove('tick');
+        void secEl.offsetWidth;
+        secEl.classList.add('tick');
+      }
+
+      // 分钟变化时才刷新日期
+      var mNow = bj.getMinutes();
+      if (mNow !== lastMinute) {
+        lastMinute = mNow;
+        var dateStr = bj.getFullYear() + '年' +
+                      String(bj.getMonth() + 1).padStart(2, '0') + '月' +
+                      String(bj.getDate()).padStart(2, '0') + '日 ' +
+                      WEEK_NAMES[bj.getDay()];
+        if (dateStr !== lastDateStr) {
+          dateEl.textContent = dateStr;
+          lastDateStr = dateStr;
+        }
+      }
+    } catch (e) {
+      if (diagEl) {
+        diagEl.style.display = 'block';
+        diagEl.textContent = '时间更新异常：' + (e && e.message ? e.message : e);
+      }
+    }
+  }
+
+  updateTime();
+  setInterval(updateTime, 250);
+
+  window.__clockCore = { updateTime: updateTime };
+})();
+</script>
+
+<!-- ============================================================
+     第二段：特效与交互（全部隔离，出错也不影响时间显示）
+     ============================================================ -->
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- 安全存储（file:// 下 localStorage 可能被拦截） ---------- */
+  function lsGet(k, d) { try { var v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  /* ---------- 主题 ---------- */
+  var THEMES = [
+    { id: 'default',      label: '午夜经典', dot: '#16202e' },
+    { id: 'navy-star',    label: '藏青·星河', dot: '#1a3a6a' },
+    { id: 'navy-aurora',  label: '藏青·极光', dot: '#0d4444' },
+    { id: 'forest',       label: '墨绿·森林', dot: '#1d5232' },
+    { id: 'forest-night', label: '墨绿·暗夜', dot: '#4a3620' }
+  ];
+
+  var RGB_MAP = {
+    'default':      '0,200,255',
+    'navy-star':    '180,210,255',
+    'navy-aurora':  '0,220,200',
+    'forest':       '80,200,120',
+    'forest-night': '212,164,76'
+  };
+
+  var currentTheme = lsGet('clock-theme', 'default');
+  var particleColor = RGB_MAP[currentTheme] || '0,200,255';
+
+  function applyTheme(id) {
+    try { document.body.setAttribute('data-theme', id); } catch (e) {}
+    lsSet('clock-theme', id);
+    currentTheme = id;
+    particleColor = RGB_MAP[id] || '0,200,255';
+    try {
+      var dots = document.querySelectorAll('.theme-dot');
+      for (var i = 0; i < dots.length; i++) {
+        if (dots[i].getAttribute('data-theme') === id) dots[i].classList.add('active');
+        else dots[i].classList.remove('active');
+      }
+    } catch (e) {}
+  }
+
+  /* ---------- 创建皮肤选择器 ---------- */
+  try {
+    var dotsBox = document.getElementById('themeDots');
+    THEMES.forEach(function (t) {
+      var d = document.createElement('div');
+      d.className = 'theme-dot';
+      d.setAttribute('data-theme', t.id);
+      d.setAttribute('data-label', t.label);
+      d.style.background = t.dot;
+      d.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        applyTheme(t.id);
+      });
+      dotsBox.appendChild(d);
+    });
+  } catch (e) {}
+  applyTheme(currentTheme);
+
+  /* ---------- 粒子系统 ---------- */
+  try {
+    var canvas = document.getElementById('particleCanvas');
+    var ctx = canvas ? canvas.getContext('2d') : null;
+
+    if (ctx) {
+      var particles = [];
+
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+
+      function Particle() { this.reset(true); }
+      Particle.prototype.reset = function (atRandomPos) {
+        this.x = Math.random() * canvas.width;
+        this.y = atRandomPos ? Math.random() * canvas.height : canvas.height + 10;
+        this.size = Math.random() * 2.2 + 0.6;
+        this.speedX = (Math.random() - 0.5) * 0.28;
+        this.speedY = (Math.random() - 0.5) * 0.28;
+        this.opacity = Math.random() * 0.38 + 0.10;
+        this.phase = Math.random() * Math.PI * 2;
+        this.pulseSpeed = Math.random() * 0.018 + 0.004;
+      };
+      Particle.prototype.update = function () {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.phase += this.pulseSpeed;
+        if (this.x < -12) this.x = canvas.width + 12;
+        if (this.x > canvas.width + 12) this.x = -12;
+        if (this.y < -12) this.y = canvas.height + 12;
+        if (this.y > canvas.height + 12) this.y = -12;
+      };
+      Particle.prototype.draw = function () {
+        var o = this.opacity * (0.62 + 0.38 * Math.sin(this.phase));
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(' + particleColor + ',' + o.toFixed(3) + ')';
+        ctx.fill();
+      };
+
+      // iPad 上略减量，肉眼几乎无差，耗电与发热更低
+      var PCOUNT = 48;
+      for (var pi = 0; pi < PCOUNT; pi++) particles.push(new Particle());
+
+      (function loop() {
+        try {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          for (var i = 0; i < particles.length; i++) {
+            particles[i].update();
+            particles[i].draw();
+          }
+        } catch (e) {}
+        requestAnimationFrame(loop);
+      })();
+    }
+  } catch (e) {}
+
+  /* ---------- 鼠标光晕（带缓动跟随） ---------- */
+  try {
+    var glow = document.getElementById('cursorGlow');
+    var targetX = -999, targetY = -999, curX = -999, curY = -999;
+
+    document.addEventListener('mousemove', function (e) {
+      targetX = e.clientX;
+      targetY = e.clientY;
+    });
+    // iPad 无鼠标，光晕跟随手指（在 touchend 里也会更新一次）
+    document.addEventListener('touchmove', function (e) {
+      if (e.touches.length !== 1) return;
+      targetX = e.touches[0].clientX;
+      targetY = e.touches[0].clientY;
+    }, { passive: true });
+
+    (function followGlow() {
+      curX += (targetX - curX) * 0.12;
+      curY += (targetY - curY) * 0.12;
+      if (glow) {
+        glow.style.left = curX + 'px';
+        glow.style.top  = curY + 'px';
+      }
+      requestAnimationFrame(followGlow);
+    })();
+  } catch (e) {}
+
+  /* ---------- 标语库 ----------
+     全部 232 条，来源与授权说明：
+       · 古诗词、文言名句（202 条）—— 作者逝世逾百年，属公有领域
+       · 现代短句（30 条）—— 网络流传佚名格言
+     代码本身以 MIT 许可发布，但**不覆盖**上述引文内容。
+     完整说明见项目根目录 DISCLAIMER.md。 */
+  var SLOGANS = [
+    '长风破浪会有时，直挂云帆济沧海','路漫漫其修远兮，吾将上下而求索',
+    '千淘万漉虽辛苦，吹尽狂沙始到金','山重水复疑无路，柳暗花明又一村',
+    '会当凌绝顶，一览众山小','欲穷千里目，更上一层楼',
+    '大鹏一日同风起，扶摇直上九万里','学不可以已',
+    '青，取之于蓝而青于蓝','骐骥一跃，不能十步；驽马十驾，功在不舍',
+    '锲而舍之，朽木不折；锲而不舍，金石可镂','不积跬步，无以至千里；不积小流，无以成江海',
+    '吾生也有涯，而知也无涯','志不立，天下无可成之事',
+    '非学无以广才，非志无以成学','非淡泊无以明志，非宁静无以致远',
+    '博观而约取，厚积而薄发','业精于勤，荒于嬉；行成于思，毁于随',
+    '书山有路勤为径，学海无涯苦作舟','学而不思则罔，思而不学则殆',
+    '温故而知新，可以为师矣','敏而好学，不耻下问',
+    '学而时习之，不亦说乎','知之者不如好之者，好之者不如乐之者',
+    '博学之，审问之，慎思之，明辨之，笃行之','玉不琢，不成器；人不学，不知道',
+    '读书破万卷，下笔如有神','古人学问无遗力，少壮工夫老始成',
+    '问渠那得清如许，为有源头活水来','纸上得来终觉浅，绝知此事要躬行',
+    '旧书不厌百回读，熟读深思子自知','少年易老学难成，一寸光阴不可轻',
+    '未觉池塘春草梦，阶前梧叶已秋声','枕上诗书闲处好，门前风景雨来佳',
+    '蹉跎莫遣韶光老，人生唯有读书好','力学如力耕，勤惰尔自知',
+    '读书切戒在慌忙，涵泳工夫兴味长','奇文共欣赏，疑义相与析',
+    '好读书，不求甚解；每有会意，便欣然忘食',
+    '盛年不重来，一日难再晨','及时当勉励，岁月不待人',
+    '劝君莫惜金缕衣，劝君惜取少年时','黑发不知勤学早，白首方悔读书迟',
+    '三更灯火五更鸡，正是男儿读书时','莫等闲，白了少年头，空悲切',
+    '逝者如斯夫，不舍昼夜','人生天地之间，若白驹之过郤，忽然而已',
+    '少年辛苦终身事，莫向光阴惰寸功','青春须早为，岂能长少年',
+    '君不见，高堂明镜悲白发，朝如青丝暮成雪','白日何短短，百年苦易满',
+    '志士惜日短，愁人知夜长','年光似鸟翩翩过，世事如棋局局新',
+    '天行健，君子以自强不息','古之立大事者，不惟有超世之才，亦必有坚忍不拔之志',
+    '志当存高远','穷且益坚，不坠青云之志',
+    '老当益壮，宁移白首之心','老骥伏枥，志在千里；烈士暮年，壮心不已',
+    '山不厌高，海不厌深','长风万里送秋雁，对此可以酣高楼',
+    '仰天大笑出门去，我辈岂是蓬蒿人','天生我材必有用，千金散尽还复来',
+    '沉舟侧畔千帆过，病树前头万木春','不畏浮云遮望眼，自缘身在最高层',
+    '千磨万击还坚劲，任尔东西南北风','不经一番寒彻骨，怎得梅花扑鼻香',
+    '宝剑锋从磨砺出，梅花香自苦寒来','石以砥焉，化钝为利',
+    '男儿何不带吴钩，收取关山五十州','宁为百夫长，胜作一书生',
+    '十年磨一剑，霜刃未曾试',
+    '士不可以不弘毅，任重而道远','岁寒，然后知松柏之后凋也',
+    '三军可夺帅也，匹夫不可夺志也','富贵不能淫，贫贱不能移，威武不能屈',
+    '天将降大任于是人也，必先苦其心志，劳其筋骨','生于忧患，死于安乐',
+    '大雪压青松，青松挺且直','咬定青山不放松，立根原在破岩中',
+    '宁可枝头抱香死，何曾吹落北风中',
+    '祸兮福之所倚，福兮祸之所伏','合抱之木，生于毫末；九层之台，起于累土',
+    '千里之行，始于足下','天下难事，必作于易；天下大事，必作于细',
+    '上善若水，水善利万物而不争','知人者智，自知者明',
+    '胜人者有力，自胜者强','己所不欲，勿施于人',
+    '君子和而不同，小人同而不和','君子坦荡荡，小人长戚戚',
+    '穷则变，变则通，通则久','满招损，谦受益',
+    '见贤思齐焉，见不贤而内自省也','择其善者而从之，其不善者而改之',
+    '君子求诸己，小人求诸人','静以修身，俭以养德',
+    '不以物喜，不以己悲','穷则独善其身，达则兼济天下',
+    '地势坤，君子以厚德载物','桃李不言，下自成蹊',
+    '君子之交淡如水，小人之交甘若醴','德不孤，必有邻',
+    '兰生幽谷，不为莫服而不芳','出淤泥而不染，濯清涟而不妖',
+    '人生自古谁无死，留取丹心照汗青','先天下之忧而忧，后天下之乐而乐',
+    '苟利国家生死以，岂因祸福避趋之',
+    '行到水穷处，坐看云起时','采菊东篱下，悠然见南山',
+    '此中有真意，欲辨已忘言','竹杖芒鞋轻胜马，谁怕？一蓑烟雨任平生',
+    '回首向来萧瑟处，归去，也无风雨也无晴','人生如逆旅，我亦是行人',
+    '海内存知己，天涯若比邻','但愿人长久，千里共婵娟',
+    '醉后不知天在水，满船清梦压星河','浮生若梦，为欢几何',
+    '人生得意须尽欢，莫使金樽空对月','且放白鹿青崖间，须行即骑访名山',
+    '安能摧眉折腰事权贵，使我不得开心颜','小舟从此逝，江海寄余生',
+    '人间有味是清欢','诗酒趁年华',
+    '落霞与孤鹜齐飞，秋水共长天一色','关关雎鸠，在河之洲',
+    '蒹葭苍苍，白露为霜；所谓伊人，在水一方','桃之夭夭，灼灼其华',
+    '昔我往矣，杨柳依依；今我来思，雨雪霏霏','如切如磋，如琢如磨',
+    '他山之石，可以攻玉','投我以木桃，报之以琼瑶',
+    '知我者，谓我心忧；不知我者，谓我何求','高山仰止，景行行止',
+    '靡不有初，鲜克有终','呦呦鹿鸣，食野之苹',
+    '鹤鸣于九皋，声闻于天','朝饮木兰之坠露兮，夕餐秋菊之落英',
+    '江南无所有，聊赠一枝春','晚来天欲雪，能饮一杯无',
+    '落花人独立，微雨燕双飞','当时明月在，曾照彩云归',
+    '无可奈何花落去，似曾相识燕归来','昨夜西风凋碧树，独上高楼，望尽天涯路',
+    '衣带渐宽终不悔，为伊消得人憔悴','众里寻他千百度，蓦然回首，那人却在，灯火阑珊处',
+    '自在飞花轻似梦，无边丝雨细如愁','一川烟草，满城风絮，梅子黄时雨',
+    '流光容易把人抛，红了樱桃，绿了芭蕉','天接云涛连晓雾，星河欲转千帆舞',
+    '九万里风鹏正举，风休住，蓬舟吹取三山去','莫道不销魂，帘卷西风，人比黄花瘦',
+    '知否，知否？应是绿肥红瘦','生当作人杰，死亦为鬼雄',
+    '赌书消得泼茶香，当时只道是寻常','人生若只如初见，何事秋风悲画扇',
+    '不负韶华行且知',
+
+    /* ───── 青春 · 励志 · 奋斗（现代高级短句） ───── */
+    '愿你的努力，配得上你的野心',
+    '热爱可抵岁月漫长',
+    '你当像鸟飞往你的山',
+    '所有的光芒，都需要时间才能被看到',
+    '前路浩浩荡荡，万事尽可期待',
+    '星光不问赶路人，时光不负有心人',
+    '慢慢来，比较快',
+    '你不需要很厉害才能开始，但你需要开始才会很厉害',
+    '你所热爱的，总有一天会反过来拥抱你',
+    '少年与爱永不老去，即便披荆斩棘，丢失怒马鲜衣',
+    '纵有疾风起，人生不言弃',
+    '不驰于空想，不骛于虚声',
+    '愿你眼底有光，心中有海',
+    '此去山高水长，愿你清澈如初',
+    '你要忍，忍到春暖花开；你要走，走到灯火通明',
+    '不必太张扬，是花自然香',
+    '所谓自由，不是随心所欲，而是自我主宰',
+    '每一个不曾起舞的日子，都是对生命的辜负',
+    '那些杀不死我的，终将使我更强大',
+    '心之所向，素履以往；生如逆旅，一苇以航',
+    '愿你所求皆如愿，所行化坦途',
+    '你要做自己的太阳，与山川湖海为伴',
+    '那些看似不起波澜的日复一日，会在某天让你看到坚持的意义',
+    '不是所有的坚持都有结果，但总有一些坚持，能从一寸冰封里开出蔷薇',
+    '你不是在孤独地奔跑，你在与无数个想放弃的自己告别',
+    '少年应有鸿鹄志，当骑骏马踏平川',
+    '愿你出走半生，归来仍是少年',
+    '无人问津的日子里，正是登峰造极的好时机',
+    '把每一个平凡的日子，都过成通向远方的台阶',
+    '你现在的每一次自律，都是未来的你在替你铺路',
+
+    /* ───── 古代经典 · 小众 · 高级励志名言 ───── */
+    '路虽远行则将至，事虽难做则必成',
+    '道阻且长，行则将至；行而不辍，未来可期',
+    '虽千万人，吾往矣',
+    '知其不可而为之',
+    '朝闻道，夕死可矣',
+    '志之所趋，无远弗届；穷山距海，不能限也',
+    '少年负壮气，奋烈自有时',
+    '宣父犹能畏后生，丈夫未可轻年少',
+    '莫愁前路无知己，天下谁人不识君',
+    '丈夫志四海，万里犹比邻',
+    '愿君学长松，慎勿作桃李',
+    '俱怀逸兴壮思飞，欲上青天揽明月',
+    '沧海可填山可移，男儿志气当如斯',
+    '板凳要坐十年冷，文章不写半句空',
+    '精诚所至，金石为开',
+    '守得云开见月明',
+    '学如弓弩，才如箭镞',
+    '粗缯大布裹生涯，腹有诗书气自华',
+    '学贵有疑，小疑则小进，大疑则大进',
+    '蚓无爪牙之利，筋骨之强，上食埃土，下饮黄泉，用心一也',
+    '目不能两视而明，耳不能两听而聪',
+    '不诱于誉，不恐于诽',
+    '天行有常，不为尧存，不为桀亡',
+    '苟日新，日日新，又日新',
+    '图难于其易，为大于其细',
+    '大巧若拙，大辩若讷',
+    '虽不能至，心向往之',
+    '事者，生于虑，成于务',
+    '十年寒窗无人问，一举成名天下知',
+    '博学笃志，切问近思',
+    '一箪食，一瓢饮，在陋巷，人不堪其忧，回也不改其乐',
+    '读书之乐乐何如，绿满窗前草不除',
+    '为学之道，莫先于穷理',
+    '问学之道，贵乎自得',
+    '君子之学，以美其身',
+    '蓄力而不发者，其发必远',
+    '磨墨濡毫，且待风来',
+    '坐冷板凳，做真学问',
+    '沉潜往复，从容含玩',
+    '不为外撼，不以物移',
+    /* 意境类小补 */
+    '明月松间照，清泉石上流',
+    '江流天地外，山色有无中',
+    '万籁此俱寂，但余钟磬音',
+    '山路元无雨，空翠湿人衣',
+    '松风吹解带，山月照弹琴'
+  ];
+
+  // Fisher-Yates 洗牌，让不同类型交叉出现
+  for (var si = SLOGANS.length - 1; si > 0; si--) {
+    var sj = Math.floor(Math.random() * (si + 1));
+    var tmp = SLOGANS[si]; SLOGANS[si] = SLOGANS[sj]; SLOGANS[sj] = tmp;
+  }
+
+  var sloganEl = document.getElementById('sloganDisplay');
+  var sweepEl  = document.getElementById('sweepLine');
+  var sloganIndex = 0;
+  var sloganTimer = null;
+  var sloganToken = 0;
+  var SLOGAN_INTERVAL = 8000;   // 单条停留时长；切换动画本身约 1.24s，低于 6s 会读不完长句
+  var OUT_MS = 620;  // 与 CSS transition 时长保持同步
+
+  function showSlogan(idx) {
+    var myToken = ++sloganToken;
+
+    // ① 淡出：上飘 + 虚化 + 字距拉开
+    sloganEl.classList.remove('in-prep');
+    sloganEl.classList.add('out');
+
+    // ② 一道光带横扫而过
+    if (sweepEl) {
+      sweepEl.classList.remove('run');
+      void sweepEl.offsetWidth;
+      sweepEl.classList.add('run');
+    }
+
+    setTimeout(function () {
+      if (myToken !== sloganToken) return;  // 已被更新的切换接管
+
+      // ③ 换字，并瞬移到下方虚化起点
+      sloganEl.textContent = SLOGANS[idx];
+      sloganEl.classList.remove('out');
+      sloganEl.classList.add('in-prep');
+      void sloganEl.offsetWidth;
+
+      // ④ 双帧后移除，触发向上浮现的柔和过渡
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          if (myToken !== sloganToken) return;
+          sloganEl.classList.remove('in-prep');
+        });
+      });
+    }, OUT_MS);
+  }
+
+  function nextSlogan() {
+    sloganIndex = (sloganIndex + 1) % SLOGANS.length;
+    showSlogan(sloganIndex);
+    resetSloganTimer();
+  }
+
+  function resetSloganTimer() {
+    if (sloganTimer) clearInterval(sloganTimer);
+    sloganTimer = setInterval(function () {
+      sloganIndex = (sloganIndex + 1) % SLOGANS.length;
+      showSlogan(sloganIndex);
+    }, SLOGAN_INTERVAL);
+  }
+
+  sloganEl.textContent = SLOGANS[0];
+  resetSloganTimer();
+
+  /* ---------- 全屏（桌面端可用；iOS Safari 不支持元素级全屏，静默失败即可） ---------- */
+  function enterFullscreen() {
+    try {
+      var el = document.documentElement;
+      var fn = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+      if (fn) { var p = fn.call(el); if (p && p.catch) p.catch(function () {}); }
+    } catch (e) {}
+  }
+  function exitFullscreen() {
+    try {
+      var fn = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+      if (fn) { var p = fn.call(document); if (p && p.catch) p.catch(function () {}); }
+    } catch (e) {}
+  }
+  function isFull() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+  }
+
+  /* ---------- 净屏模式（iOS 上没有全屏 API，用隐藏界面元素代替） ---------- */
+  function toggleChrome() {
+    var on = document.body.classList.toggle('bare');
+    try { lsSet('clock-bare', on ? '1' : '0'); } catch (e) {}
+  }
+
+  /* ---------- 屏幕常亮：iPadOS 16.4+ 支持 Screen Wake Lock ---------- */
+  var wakeLock = null;
+  function keepAwake() {
+    try {
+      if (!navigator.wakeLock || !navigator.wakeLock.request) return;
+      navigator.wakeLock.request('screen').then(function (lock) {
+        wakeLock = lock;
+        try {
+          lock.addEventListener('release', function () { wakeLock = null; });
+        } catch (e) {}
+      }).catch(function () {});
+    } catch (e) {}
+  }
+  document.addEventListener('touchend', keepAwake, { once: true });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && !wakeLock) keepAwake();
+  });
+
+  /* ---------- 键盘快捷键 ---------- */
+  document.addEventListener('keydown', function (e) {
+    var k = e.key;
+    if (k === 'Escape') {
+      if (isFull()) { e.preventDefault(); exitFullscreen(); }
+      return;
+    }
+    if (k === 'F11') {
+      e.preventDefault();
+      if (isFull()) exitFullscreen(); else enterFullscreen();
+      return;
+    }
+    if (k === ' ' || k === 'Enter') { e.preventDefault(); nextSlogan(); return; }
+    if (k === 's' || k === 'S') {
+      var idx = 0;
+      for (var i = 0; i < THEMES.length; i++) if (THEMES[i].id === currentTheme) idx = i;
+      applyTheme(THEMES[(idx + 1) % THEMES.length].id);
+      return;
+    }
+    if (k === 'f' || k === 'F') {
+      // 触屏设备无全屏 API，退化为净屏
+      if ('ontouchstart' in window) toggleChrome();
+      else if (isFull()) exitFullscreen(); else enterFullscreen();
+      return;
+    }
+    if (k === 'h' || k === 'H') { document.body.classList.toggle('hide-cursor'); }
+  });
+
+  /* ---------- 触屏手势 ---------- */
+  var tStartX = 0, tStartY = 0, tStartT = 0, tMoved = false;
+  var lastTapT = 0, tapTimer = null;
+  var HIT_SWIPE = 60, TAP_MAX = 600, DBL_GAP = 320;
+
+  function isDot(el) {
+    while (el && el !== document.body) {
+      if (el.classList && el.classList.contains('theme-dot')) return true;
+      el = el.parentNode;
+    }
+    return false;
+  }
+
+  document.addEventListener('touchstart', function (e) {
+    if (e.touches.length !== 1) { tMoved = true; return; }
+    var t = e.touches[0];
+    tStartX = t.clientX; tStartY = t.clientY; tStartT = Date.now();
+    tMoved = false;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', function (e) {
+    if (e.touches.length !== 1) return;
+    var t = e.touches[0];
+    if (Math.abs(t.clientX - tStartX) > 12 || Math.abs(t.clientY - tStartY) > 12) tMoved = true;
+  }, { passive: true });
+
+  document.addEventListener('touchend', function (e) {
+    if (isDot(e.target)) return;                       // 点在皮肤圆点上，交给它自己处理
+    var dt = Date.now() - tStartT;
+    var endX = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : tStartX;
+    var dx = endX - tStartX;
+
+    // ① 横向滑动超过 60px → 换皮肤（左滑下一种，右滑上一种）
+    if (tMoved && Math.abs(dx) > HIT_SWIPE && dt < 900) {
+      var idx = 0;
+      for (var i = 0; i < THEMES.length; i++) if (THEMES[i].id === currentTheme) idx = i;
+      var step = dx < 0 ? 1 : -1;
+      applyTheme(THEMES[(idx + step + THEMES.length) % THEMES.length].id);
+      return;
+    }
+    if (tMoved || dt > TAP_MAX) return;                 // 拖动或长按，不算点击
+
+    // ② 双击 → 净屏
+    var now = Date.now();
+    if (now - lastTapT < DBL_GAP) {
+      if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; }
+      lastTapT = 0;
+      toggleChrome();
+      return;
+    }
+    // ③ 单击 → 换句（延迟 DBL_GAP，让双击有机会插入）
+    lastTapT = now;
+    if (tapTimer) clearTimeout(tapTimer);
+    tapTimer = setTimeout(function () { tapTimer = null; nextSlogan(); }, DBL_GAP);
+  });
+
+  /* 桌面端：鼠标点击换句、双击进全屏
+     双击时浏览器会先连发两次 click，若直接响应会把标语跳过两句，
+     所以单击延迟 240ms 执行，双击到来时撤销这次单击。 */
+  var deskTapTimer = null;
+  document.addEventListener('click', function (e) {
+    if (isDot(e.target)) return;
+    if ('ontouchstart' in window) return;   // 触屏已由 touchend 处理，避免重复触发
+    if (deskTapTimer) {                     // 这是双击的第二下
+      clearTimeout(deskTapTimer); deskTapTimer = null;
+      return;
+    }
+    deskTapTimer = setTimeout(function () { deskTapTimer = null; nextSlogan(); }, 240);
+  });
+
+  document.addEventListener('dblclick', function (e) {
+    if (isDot(e.target)) return;
+    if ('ontouchstart' in window) return;
+    if (deskTapTimer) { clearTimeout(deskTapTimer); deskTapTimer = null; }
+    if (isFull()) exitFullscreen(); else enterFullscreen();
+  });
+
+  /* 提示文案按设备切换 */
+  try {
+    var hintEl = document.getElementById('hintBar');
+    if (hintEl && 'ontouchstart' in window) {
+      hintEl.textContent = '轻点换句 · 左右滑动换皮肤 · 双击净屏';
+    }
+  } catch (e) {}
+
+  /* 恢复上次的净屏状态 */
+  try {
+    if (lsGet('clock-bare', '0') === '1') document.body.classList.add('bare');
+  } catch (e) {}
+
+})();
+</script>
+</body>
+</html>
